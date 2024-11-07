@@ -1,37 +1,39 @@
-import os
 import streamlit as st
 import pandas as pd
 from langchain.agents import create_pandas_dataframe_agent
 from langchain.llms import OpenAI
-from apikey import apikey
+import os
 
-# Set OpenAI API key
-os.environ["OPENAI_API_KEY"] = apikey
+# Load OpenAI API key from environment variables or directly set here
+openai_api_key = os.getenv("OPENAI_API_KEY")
+if not openai_api_key:
+    st.warning("Please set the OpenAI API key.")
+    st.stop()
 
-# Define Streamlit app
-def app():
-      # Title and description
-    st.title("CSV Query App")
-    st.write("Upload a CSV file and enter a query to get an answer.")
-    file =  st.file_uploader("Upload CSV file",type=["csv"])
-    if not file:
-        st.stop()
+# Initialize OpenAI model with LangChain
+llm = OpenAI(api_key=openai_api_key, temperature=0.0)
 
-    data = pd.read_csv(file)
-    st.write("Data Preview:")
-    st.dataframe(data.head()) 
+# Streamlit UI
+st.title("Analyze Any CSV File with LangChain and OpenAI")
+uploaded_file = st.file_uploader("Upload a CSV file", type="csv")
 
-    agent = create_pandas_dataframe_agent(OpenAI(temperature=0),data,verbose=True) 
+if uploaded_file:
+    # Load the CSV file into a DataFrame
+    df = pd.read_csv(uploaded_file)
+    st.write("### CSV Data Preview")
+    st.dataframe(df.head())  # Show the first few rows of the CSV
 
-    query = st.text_input("Enter a query:") 
+    # Create a LangChain agent for DataFrame interaction
+    agent = create_pandas_dataframe_agent(llm, df, verbose=True)
 
-    if st.button("Execute"):
-        answer = agent.run(query)
-        st.write("Answer:")
-        st.write(answer)
-
-
-    
-  
-if __name__ == "__main__":
-    app()
+    # Ask a question about the data
+    question = st.text_input("Ask a question about your data:")
+    if question:
+        with st.spinner("Analyzing your data..."):
+            try:
+                # Get answer from the LangChain agent
+                answer = agent.run(question)
+                st.write("### Answer:")
+                st.write(answer)
+            except Exception as e:
+                st.error(f"Error: {e}")
