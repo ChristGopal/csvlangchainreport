@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from langchain.agents import create_pandas_dataframe_agent
+from langchain_experimental.agents.create_pandas_dataframe_agent
 from langchain.llms import OpenAI
 import os
 
